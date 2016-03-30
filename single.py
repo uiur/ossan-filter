@@ -2,6 +2,12 @@ import tensorflow as tf
 import numpy as np
 import data
 
+def init_weight(shape):
+    return tf.Variable(tf.truncated_normal(shape, stddev=0.1))
+
+def init_bias(shape):
+    return tf.Variable(tf.constant(0.1, shape=shape))
+
 training, test = data.load_data()
 
 sess = tf.Session()
@@ -10,8 +16,9 @@ sess = tf.Session()
 x = tf.placeholder(tf.float32, shape=[None, 24 * 24])
 y_ = tf.placeholder(tf.float32, shape=[None, 2])
 
-W = tf.Variable(tf.zeros([24 * 24, 2]))
-b = tf.Variable(tf.zeros([2]))
+
+W = init_weight([24 * 24, 2])
+b = init_bias([2])
 
 y = tf.nn.softmax(tf.matmul(x,W) + b)
 cross_entropy = -tf.reduce_sum(y_*tf.log(y))
