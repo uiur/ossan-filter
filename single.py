@@ -1,5 +1,8 @@
 import tensorflow as tf
 import numpy as np
+import data
+
+training, test = data.load_data()
 
 sess = tf.Session()
 
@@ -12,19 +15,28 @@ b = tf.Variable(tf.zeros([2]))
 
 y = tf.nn.softmax(tf.matmul(x,W) + b)
 cross_entropy = -tf.reduce_sum(y_*tf.log(y))
+ce_summ = tf.scalar_summary("cross entropy", cross_entropy)
+
+correct_prediction = tf.equal(tf.argmax(y, 1), tf.argmax(y_, 1))
+accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+
+accuracy_summary = tf.scalar_summary("accuracy", accuracy)
 
 train_step = tf.train.GradientDescentOptimizer(0.01).minimize(cross_entropy)
 sess.run(tf.initialize_all_variables())
 
-for i in range(10000):
-  batch = next_batch(50)
-  sess.run(train_step, feed_dict={x: batch[0], y_: batch[1]})
+merged = tf.merge_all_summaries()
+writer = tf.train.SummaryWriter("./tmp/logs", sess.graph_def)
 
-  correct_prediction = tf.equal(tf.argmax(y, 1), tf.argmax(y_, 1))
-  accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+for i in range(10000):
+  batch = data.next_batch(training, 50)
+  sess.run(train_step, feed_dict={x: batch[0], y_: batch[1]})
 
   test_images, test_labels = test
   if i % 100 == 0:
-      a = sess.run(accuracy, feed_dict={x: test_images, y_: test_labels})
+      (m, a) = sess.run([merged, accuracy], feed_dict={x: test_images, y_: test_labels})
+
+      writer.add_summary(m, i)
+
       print('Epoch: %d' % i)
       print('Accuracy: %0.04f' % a)
