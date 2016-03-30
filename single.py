@@ -3,11 +3,11 @@ import numpy as np
 import data
 import math
 
-input_size = 24 * 24
+input_size = data.SIZE * data.SIZE
 
 def show_image(img):
     img = (img + 0.5) * 255
-    cv2.imshow('image', cv2.cvtColor(img.reshape([24, 24]).astype('uint8'), cv2.COLOR_GRAY2BGR))
+    cv2.imshow('image', cv2.cvtColor(img.reshape([data.SIZE, data.SIZE]).astype('uint8'), cv2.COLOR_GRAY2BGR))
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
@@ -37,7 +37,7 @@ accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
 accuracy_summary = tf.scalar_summary("accuracy", accuracy)
 
-train_step = tf.train.GradientDescentOptimizer(0.01).minimize(cross_entropy)
+train_step = tf.train.GradientDescentOptimizer(0.001).minimize(cross_entropy)
 sess.run(tf.initialize_all_variables())
 
 merged = tf.merge_all_summaries()
