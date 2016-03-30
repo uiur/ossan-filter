@@ -1,23 +1,25 @@
 import tensorflow as tf
 import numpy as np
 import data
+import math
+
+input_size = 24 * 24
 
 def init_weight(shape):
-    return tf.Variable(tf.truncated_normal(shape, stddev=0.1))
+    return tf.Variable(tf.truncated_normal(shape, stddev=1.0 / math.sqrt(input_size)))
 
 def init_bias(shape):
-    return tf.Variable(tf.constant(0.1, shape=shape))
+    return tf.Variable(tf.truncated_normal(shape, stddev=1.0))
 
 training, test = data.load_data()
 
 sess = tf.Session()
 
 # 24 x 24
-x = tf.placeholder(tf.float32, shape=[None, 24 * 24])
+x = tf.placeholder(tf.float32, shape=[None, input_size])
 y_ = tf.placeholder(tf.float32, shape=[None, 2])
 
-
-W = init_weight([24 * 24, 2])
+W = init_weight([input_size, 2])
 b = init_bias([2])
 
 y = tf.nn.softmax(tf.matmul(x,W) + b)
@@ -47,3 +49,6 @@ for i in range(10000):
 
       print('Epoch: %d' % i)
       print('Accuracy: %0.04f' % a)
+
+test_images, test_labels = test
+print(sess.run(accuracy, feed_dict={x: test_images, y_: test_labels}))
