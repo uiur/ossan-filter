@@ -5,6 +5,12 @@ import math
 
 input_size = 24 * 24
 
+def show_image(img):
+    img = (img + 0.5) * 255
+    cv2.imshow('image', cv2.cvtColor(img.reshape([24, 24]).astype('uint8'), cv2.COLOR_GRAY2BGR))
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
 def init_weight(shape):
     return tf.Variable(tf.truncated_normal(shape, stddev=1.0 / math.sqrt(input_size)))
 
