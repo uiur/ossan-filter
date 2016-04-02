@@ -20,24 +20,20 @@ def init_bias(shape):
 def conv2d(x, W):
   return tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding='SAME')
 
-def max_pool_2x2(x):
-  return tf.nn.max_pool(x, ksize=[1, 2, 2, 1],
-                        strides=[1, 2, 2, 1], padding='SAME')
-
 def inference(images):
-    W_conv1 = init_weight([5, 5, 1, 32])
+    W_conv1 = init_weight([5, 5, 3, 32])
     b_conv1 = init_bias([32])
 
-    x_image = tf.reshape(x, [-1, data.SIZE, data.SIZE, 1])
+    x_image = tf.reshape(x, [-1, data.SIZE, data.SIZE, 3])
 
     h_conv1 = tf.nn.relu(conv2d(x_image, W_conv1) + b_conv1)
-    h_pool1 = max_pool_2x2(h_conv1)
+    h_pool1 = tf.nn.max_pool(h_conv1, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
 
     W_conv2 = init_weight([5, 5, 32, 64])
     b_conv2 = init_bias([64])
 
     h_conv2 = tf.nn.relu(conv2d(h_pool1, W_conv2) + b_conv2)
-    h_pool2 = max_pool_2x2(h_conv2)
+    h_pool2 = tf.nn.max_pool(h_conv2, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
 
     W_fc1 = init_weight([7 * 7 * 64, 1024])
     b_fc1 = init_bias([1024])
@@ -60,7 +56,7 @@ def train(total_loss):
 
     return tf.train.AdamOptimizer().minimize(total_loss)
 
-def do_eval(logits, labels):
+def evaluate(logits, labels):
     correct_prediction = tf.equal(tf.argmax(logits, 1), tf.argmax(labels, 1))
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
@@ -70,12 +66,14 @@ def do_eval(logits, labels):
 
 training, test = data.load_data()
 
-x = tf.placeholder(tf.float32, shape=[None, input_size])
+x = tf.placeholder(tf.float32, shape=[None, input_size * 3])
 y_ = tf.placeholder(tf.float32, shape=[None, 2])
 keep_prob = tf.placeholder(tf.float32)
 
-predictions = inference(x)
-total_loss = loss(predictions, y_)
+logits = inference(x)
+total_loss = loss(logits, y_)
+predictions = tf.nn.softmax(logits)
+
 train_step = train(total_loss)
 
 saver = tf.train.Saver()
@@ -85,20 +83,21 @@ sess.run(tf.initialize_all_variables())
 
 merged = tf.merge_all_summaries()
 writer = tf.train.SummaryWriter("./tmp/logs", sess.graph_def)
+accuracy = evaluate(predictions, y_)
 
 for i in range(10000):
   batch = data.next_batch(training, 50)
-  sess.run(train_step, feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
 
   test_images, test_labels = test
   if i % 100 == 0:
-      accuracy = do_eval(predictions, y_)
       train_accuracy = sess.run(accuracy, feed_dict={x: batch[0], y_: batch[1], keep_prob: 1.0 })
       (m, test_accuracy) = sess.run([merged, accuracy], feed_dict={x: test_images, y_: test_labels, keep_prob: 1.0 })
 
       writer.add_summary(m, i)
 
       print('Epoch %d:  train: %0.04f   test: %0.04f' % (i, train_accuracy, test_accuracy))
+
+  sess.run(train_step, feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
 
   if (i+1) % 1000 == 0:
      saver.save(sess, './tmp/train/', global_step=i)

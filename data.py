@@ -5,9 +5,8 @@ import random
 
 SIZE = 28
 
-# grayscale
 def read_images(files):
-    return [cv2.resize(cv2.imread(f, 0), (SIZE, SIZE)) for f in files]
+    return [cv2.resize(cv2.imread(f), (SIZE, SIZE)) for f in files]
 
 def make_data(ossan_images, other_images):
     input_data = np.array([image.flatten() for image in ossan_images + other_images], dtype='float32')
