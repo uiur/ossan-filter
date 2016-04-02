@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 import random
 
-SIZE = 24
+SIZE = 28
 
 # grayscale
 def read_images(files):
