@@ -24,9 +24,7 @@ def inference(images):
     W_conv1 = init_weight([5, 5, 3, 32])
     b_conv1 = init_bias([32])
 
-    x_image = tf.reshape(x, [-1, data.SIZE, data.SIZE, 3])
-
-    h_conv1 = tf.nn.relu(conv2d(x_image, W_conv1) + b_conv1)
+    h_conv1 = tf.nn.relu(conv2d(images, W_conv1) + b_conv1)
     h_pool1 = tf.nn.max_pool(h_conv1, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
 
     W_conv2 = init_weight([5, 5, 32, 64])
@@ -64,9 +62,7 @@ def evaluate(logits, labels):
 
     return accuracy
 
-training, test = data.load_data()
-
-x = tf.placeholder(tf.float32, shape=[None, input_size * 3])
+x = tf.placeholder(tf.float32, shape=[None, data.SIZE, data.SIZE, 3])
 y_ = tf.placeholder(tf.float32, shape=[None, 2])
 keep_prob = tf.placeholder(tf.float32)
 
@@ -76,19 +72,24 @@ predictions = tf.nn.softmax(logits)
 
 train_step = train(total_loss)
 
+batch_op = data.batch(50)
+load_test_op = data.load_test()
+
 saver = tf.train.Saver()
 sess = tf.Session()
 
 sess.run(tf.initialize_all_variables())
+tf.train.start_queue_runners(sess=sess)
 
 merged = tf.merge_all_summaries()
 writer = tf.train.SummaryWriter("./tmp/logs", sess.graph_def)
 accuracy = evaluate(predictions, y_)
 
-for i in range(10000):
-  batch = data.next_batch(training, 50)
+test_images, test_labels = sess.run(load_test_op)
 
-  test_images, test_labels = test
+for i in range(10000):
+  batch = sess.run(batch_op)
+
   if i % 100 == 0:
       train_accuracy = sess.run(accuracy, feed_dict={x: batch[0], y_: batch[1], keep_prob: 1.0 })
       (m, test_accuracy) = sess.run([merged, accuracy], feed_dict={x: test_images, y_: test_labels, keep_prob: 1.0 })

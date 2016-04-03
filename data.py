@@ -1,44 +1,34 @@
 import glob
-import cv2
-import numpy as np
-import random
+import tensorflow as tf
 
 SIZE = 28
+IMAGE_SHAPE = [SIZE, SIZE, 3]
 
-def read_images(files):
-    return [cv2.resize(cv2.imread(f), (SIZE, SIZE)) for f in files]
+def normalize(image):
+    return image / 255.0 - 0.5
 
-def make_data(ossan_images, other_images):
-    input_data = np.array([image.flatten() for image in ossan_images + other_images], dtype='float32')
-    input_data = input_data / 255.0 - 0.5
-    label_data = np.concatenate(
-        (
-            np.array([(1., 0.) for i in range(len(ossan_images))]),
-            np.array([(0., 1.) for i in range(len(other_images))]),
-        )
-    )
+def load_image(pattern):
+    filenames = glob.glob(pattern)
+    queue = tf.train.string_input_producer(filenames)
 
-    return (input_data, label_data)
+    reader = tf.WholeFileReader()
+    key, value = reader.read(queue)
+    image = tf.image.decode_png(value, channels=3)
+    return normalize(tf.cast(image, tf.float32))
 
-def load_data():
-    ossan_images = read_images(glob.glob('./data/ossan/*.png'))
-    np.random.shuffle(ossan_images)
-    test_ossan_images, training_ossan_images = ossan_images[0:100], ossan_images[101:]
+def load_ossan():
+    image = load_image('resized_data/train/ossan/*.png')
+    return tf.tuple([image, tf.constant([1., 0.])])
 
-    other_images = read_images(glob.glob('./data/other/*.png'))
-    np.random.shuffle(other_images)
-    test_other_images, training_other_images = other_images[0:100], other_images[101:]
+def load_other():
+    image = load_image('resized_data/train/other/*.png')
+    return tf.tuple([image, tf.constant([0., 1.])])
 
-    training = make_data(training_ossan_images, training_other_images)
-    test = make_data(test_ossan_images, test_other_images)
-    return (training, test)
+def load_test(batch_size=300):
+    ossan = load_image('resized_data/test/ossan/*.png')
+    other = load_image('resized_data/test/other/*.png')
 
-def next_batch(data, size):
-    inputs = []
-    labels = []
-    for i in range(size):
-        random_index = random.randint(0, len(data[0]) - 1)
-        inputs.append(data[0][random_index])
-        labels.append(data[1][random_index])
+    return tf.train.batch_join([tf.tuple([ossan, tf.constant([1., 0.])]), tf.tuple([other, tf.constant([0., 1.])])], batch_size, shapes=[IMAGE_SHAPE, [2]])
 
-    return (np.array(inputs), np.array(labels))
+def batch(batch_size):
+    return tf.train.shuffle_batch_join([load_ossan(), load_other()], batch_size, 1000, 10, enqueue_many=False, shapes=[IMAGE_SHAPE, [2]])
