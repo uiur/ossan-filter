@@ -1,15 +1,8 @@
 import tensorflow as tf
-import numpy as np
 import data
 import math
 
 input_size = data.SIZE * data.SIZE
-
-def show_image(img):
-    img = (img + 0.5) * 255
-    cv2.imshow('image', cv2.cvtColor(img.reshape([data.SIZE, data.SIZE]).astype('uint8'), cv2.COLOR_GRAY2BGR))
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
 
 def init_weight(shape):
     return tf.Variable(tf.truncated_normal(shape, stddev=1.0 / math.sqrt(input_size)))
@@ -20,7 +13,7 @@ def init_bias(shape):
 def conv2d(x, W):
   return tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding='SAME')
 
-def inference(images):
+def inference(images, keep_prob=tf.constant(1.0)):
     W_conv1 = init_weight([5, 5, 3, 32])
     b_conv1 = init_bias([32])
 
@@ -61,47 +54,3 @@ def evaluate(logits, labels):
     accuracy_summary = tf.scalar_summary("accuracy", accuracy)
 
     return accuracy
-
-x = tf.placeholder(tf.float32, shape=[None, data.SIZE, data.SIZE, 3])
-y_ = tf.placeholder(tf.float32, shape=[None, 2])
-keep_prob = tf.placeholder(tf.float32)
-
-logits = inference(x)
-total_loss = loss(logits, y_)
-predictions = tf.nn.softmax(logits)
-
-train_step = train(total_loss)
-
-batch_op = data.batch(50)
-load_test_op = data.load_test()
-
-saver = tf.train.Saver()
-sess = tf.Session()
-
-sess.run(tf.initialize_all_variables())
-tf.train.start_queue_runners(sess=sess)
-
-merged = tf.merge_all_summaries()
-writer = tf.train.SummaryWriter("./tmp/logs", sess.graph_def)
-accuracy = evaluate(predictions, y_)
-
-test_images, test_labels = sess.run(load_test_op)
-
-for i in range(10000):
-  batch = sess.run(batch_op)
-
-  if i % 100 == 0:
-      train_accuracy = sess.run(accuracy, feed_dict={x: batch[0], y_: batch[1], keep_prob: 1.0 })
-      (m, test_accuracy) = sess.run([merged, accuracy], feed_dict={x: test_images, y_: test_labels, keep_prob: 1.0 })
-
-      writer.add_summary(m, i)
-
-      print('Epoch %d:  train: %0.04f   test: %0.04f' % (i, train_accuracy, test_accuracy))
-
-  sess.run(train_step, feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
-
-  if (i+1) % 1000 == 0:
-     saver.save(sess, './tmp/train/', global_step=i)
-
-test_images, test_labels = test
-print(sess.run(accuracy, feed_dict={x: test_images, y_: test_labels, keep_prob: 1.0}))
