@@ -4,8 +4,11 @@ import data
 
 import numpy as np
 import PIL.Image
-from cStringIO import StringIO
 from IPython.display import Image, display
+
+flags = tf.app.flags
+FLAGS = flags.FLAGS
+flags.DEFINE_string('model', 'tmp/train/0403-9999', '')
 
 sess = tf.Session()
 
@@ -16,7 +19,7 @@ wrong_prediction = tf.not_equal(tf.argmax(predictions, 1), tf.argmax(test_labels
 wrong_images = tf.boolean_mask(test_images, wrong_prediction)
 
 saver = tf.train.Saver()
-saver.restore(sess, 'tmp/train/0403-9999')
+saver.restore(sess, FLAGS.model)
 tf.train.start_queue_runners(sess=sess)
 
 images = sess.run((wrong_images + 0.5) * 255.0)
