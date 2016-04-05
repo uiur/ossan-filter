@@ -5,9 +5,6 @@ import cv2
 from deep import *
 import data
 
-if len(sys.argv) < 2:
-    print("python run.py /path/to/image.png")
-
 cascade_file = "/usr/local/Cellar/opencv/2.4.12_2/share/OpenCV/haarcascades/haarcascade_frontalface_alt.xml"
 
 def read_face(path):
@@ -17,22 +14,34 @@ def read_face(path):
                                      scaleFactor = 1.1,
                                      minNeighbors = 5,
                                      minSize = (28, 28))
-    return faces[0]
+    (x, y, w, h) = faces[0]
+    return image[y:y+h, x:x+w]
 
-def read_image(path):
-    image = tf.constant(read_face(path), shape=data.IMAGE_SHAPE)
+image_input = tf.placeholder(tf.float32, shape=data.IMAGE_SHAPE)
 
-    resized = tf.image.resize_image_with_crop_or_pad(image, data.SIZE, data.SIZE)
-    return data.normalize(tf.cast(resized, tf.float32))
+class Model:
+    def __init__(self):
+        self.predictions = tf.nn.softmax(inference(tf.expand_dims(image_input, 0)))
+        self.sess = tf.Session()
 
-image = read_image(sys.argv[1])
-predictions = tf.nn.softmax(inference(tf.expand_dims(image, 0)))
+        saver = tf.train.Saver()
+        saver.restore(self.sess, 'tmp/train/0403-9999')
 
-sess = tf.Session()
-tf.train.start_queue_runners(sess=sess)
+    def resize(self, image):
+        resized = tf.image.resize_image_with_crop_or_pad(tf.constant(image), data.SIZE, data.SIZE)
+        return data.normalize(tf.cast(resized, tf.float32))
 
-saver = tf.train.Saver()
-saver.restore(sess, 'tmp/train/0403-9999')
+    def predict(self, raw_image):
+        resized = self.resize(raw_image)
+        image = self.sess.run(resized)
+        return self.sess.run(self.predictions, feed_dict={image_input: image})
 
-prob = sess.run(predictions)
-print("ossan: %f\nother: %f" % (prob[0][0], prob[0][1]))
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("python run.py /path/to/image.png")
+
+    face = read_face(sys.argv[1])
+    model = Model()
+    prob = model.predict(face)
+
+    print("ossan: %f\nother: %f" % (prob[0][0], prob[0][1]))
