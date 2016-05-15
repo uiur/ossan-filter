@@ -4,7 +4,7 @@ import sys
 import os.path
 import hashlib
 
-def detect(filename, cascade_file = "../lbpcascade_animeface.xml"):
+def detect(filename, cascade_file = "../lbpcascade_animeface.xml", dirname = 'tmp/'):
     if not os.path.isfile(cascade_file):
         raise RuntimeError("%s: not found" % cascade_file)
 
@@ -22,18 +22,12 @@ def detect(filename, cascade_file = "../lbpcascade_animeface.xml"):
     for (x, y, w, h) in faces:
         m = hashlib.md5()
         m.update(open(filename).read())
-    	cv2.imwrite("data/other/" + m.hexdigest() + '-' + str(i) + '.png', image[y:y+h, x:x+w])
-        # cv2.rectangle(image, (x, y), (x + w, y + h), (0, 0, 255), 2)
+        name = m.hexdigest() + '-' + str(i) + '.png'
+    	cv2.imwrite(dirname + name, image[y:y+h, x:x+w])
         i += 1
 
-    # cv2.imshow("FaceDetect", image)
-    # cv2.waitKey(0)
-    # cv2.imwrite("out.png", image)
-    # print(open("out.png").read())
-
-if len(sys.argv) != 2:
-    sys.stderr.write("usage: detect.py <filename>\n")
+if len(sys.argv) != 3:
+    sys.stderr.write("usage: face.py <filename> <dir>\n")
     sys.exit(-1)
 
-detect(sys.argv[1], cascade_file = "/usr/local/Cellar/opencv/2.4.12_2/share/OpenCV/haarcascades/haarcascade_frontalface_alt.xml")
-# detect(sys.argv[1], cascade_file = "lbpcascade_animeface.xml")
+detect(sys.argv[1], cascade_file = "/usr/local/Cellar/opencv/2.4.12_2/share/OpenCV/haarcascades/haarcascade_frontalface_alt.xml", dirname=sys.argv[2])

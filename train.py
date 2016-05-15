@@ -41,6 +41,6 @@ for i in range(10000):
   sess.run(train_step, feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
 
   if (i+1) % 1000 == 0:
-     saver.save(sess, './tmp/train/0403', global_step=i)
+     saver.save(sess, './tmp/train/0515', global_step=i)
 
 print(sess.run(accuracy, feed_dict={x: test_images, y_: test_labels, keep_prob: 1.0}))

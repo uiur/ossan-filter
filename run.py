@@ -9,6 +9,7 @@ cascade_file = "/usr/local/Cellar/opencv/2.4.12_2/share/OpenCV/haarcascades/haar
 
 def read_face(path):
     image = cv2.imread(path)
+    return image
     cascade = cv2.CascadeClassifier(cascade_file)
     faces = cascade.detectMultiScale(image,
                                      scaleFactor = 1.1,
@@ -25,7 +26,7 @@ class Model:
         self.sess = tf.Session()
 
         saver = tf.train.Saver()
-        saver.restore(self.sess, 'tmp/train/0403-9999')
+        saver.restore(self.sess, 'tmp/train/0515-9999')
 
     def resize(self, image):
         resized = tf.image.resize_image_with_crop_or_pad(tf.constant(image), data.SIZE, data.SIZE)

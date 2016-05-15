@@ -11,7 +11,7 @@ def init_bias(shape):
     return tf.Variable(tf.truncated_normal(shape, stddev=1.0))
 
 def conv2d(x, W):
-  return tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding='SAME')
+    return tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding='SAME')
 
 def inference(images, keep_prob=tf.constant(1.0)):
     W_conv1 = init_weight([5, 5, 3, 32])

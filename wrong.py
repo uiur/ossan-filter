@@ -8,7 +8,7 @@ from IPython.display import Image, display
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
-flags.DEFINE_string('model', 'tmp/train/0403-9999', '')
+flags.DEFINE_string('model', 'tmp/train/0515-9999', '')
 
 sess = tf.Session()
 
